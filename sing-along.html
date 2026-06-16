@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veronika · Sing Along</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Playfair+Display:ital,wght@0,500;1,600&display=swap" rel="stylesheet">
+<style>
+:root{ --gold:#C9A84C; --gold2:#E8C97A; --bg:#0d0804; --cream:#F0E6C8; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:radial-gradient(120% 90% at 50% 0%, #1A0A00 0%, #0d0804 60%);color:var(--cream);
+  font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:26px 16px 150px;-webkit-font-smoothing:antialiased;}
+.crest{font-size:12px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);opacity:.7;}
+h1{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(38px,9vw,64px);color:var(--gold);
+  text-shadow:0 0 50px rgba(201,168,76,.3);line-height:1;margin-top:6px;}
+.sub{font-size:13px;letter-spacing:6px;text-transform:uppercase;color:rgba(240,230,200,.6);margin-top:8px;}
+.langbar{display:flex;gap:10px;margin:22px 0 6px;}
+.langbar button{background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.3);color:var(--cream);
+  border-radius:999px;padding:9px 22px;font-family:'Cormorant Garamond',serif;font-size:17px;cursor:pointer;transition:.2s;}
+.langbar button.on{background:var(--gold);color:#1A0A00;border-color:var(--gold);font-weight:600;}
+.lyrics{max-width:620px;width:100%;text-align:center;margin-top:24px;}
+.line{font-size:clamp(20px,4.4vw,30px);line-height:1.5;color:rgba(240,230,200,.32);transition:color .4s, transform .4s, opacity .4s;
+  padding:7px 0;opacity:.55;}
+.line.section{font-family:'Playfair Display',serif;font-style:italic;font-size:15px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(201,168,76,.5);margin-top:22px;opacity:.8;}
+.line.active{color:var(--gold2);opacity:1;transform:scale(1.04);text-shadow:0 0 30px rgba(201,168,76,.3);}
+.line.past{color:rgba(240,230,200,.22);}
+
+.player{position:fixed;bottom:0;left:0;right:0;background:rgba(13,8,4,.97);backdrop-filter:blur(14px);
+  border-top:1px solid rgba(201,168,76,.3);padding:14px 16px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.p-row{display:flex;align-items:center;gap:16px;width:100%;max-width:560px;}
+.now{flex:1;font-size:14px;letter-spacing:1px;color:var(--gold);}
+.ctrl button{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.45);color:var(--gold);width:50px;height:50px;
+  border-radius:50%;cursor:pointer;font-size:19px;display:flex;align-items:center;justify-content:center;}
+.bar-wrap{width:100%;max-width:560px;display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(240,230,200,.5);}
+.bar{flex:1;height:4px;background:rgba(201,168,76,.15);border-radius:3px;cursor:pointer;}
+.fill{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:3px;width:0%;}
+.tools{display:flex;gap:10px;align-items:center;font-size:12px;color:rgba(240,230,200,.5);flex-wrap:wrap;justify-content:center;}
+.tools button{background:none;border:1px solid rgba(201,168,76,.25);color:rgba(240,230,200,.65);border-radius:999px;
+  padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;}
+.tools button.live{color:#1A0A00;background:var(--gold);border-color:var(--gold);}
+.tap-hint{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+  background:rgba(13,8,4,.55);z-index:60;text-align:center;padding:30px;cursor:pointer;}
+.tap-hint.on{display:flex;}
+.tap-hint .big{font-family:'Playfair Display',serif;font-size:clamp(28px,6vw,44px);color:var(--gold);}
+.tap-hint p{font-size:18px;color:var(--cream);margin-top:14px;max-width:420px;}
+</style>
+</head>
+<body>
+  <div class="crest">Sing along · with all my love</div>
+  <h1>Veronika</h1>
+  <div class="sub">Forty &amp; Glorious</div>
+
+  <div class="langbar">
+    <button id="btn-en" class="on" onclick="setLang('en')">English</button>
+    <button id="btn-cs" onclick="setLang('cs')">Čeština</button>
+  </div>
+
+  <div class="lyrics" id="lyrics"></div>
+
+  <div class="tap-hint" id="tapHint" onclick="tapMark()">
+    <div class="big" id="tapBig">Tap when each line begins</div>
+    <p id="tapNext"></p>
+    <p style="font-size:14px;opacity:.7;margin-top:20px;">Tap anywhere (or press Space) right as each line is sung. When the song ends, your timing is saved.</p>
+  </div>
+
+  <div class="player">
+    <div class="tools">
+      <button id="syncBtn" onclick="toggleTapMode()">🎤 Tap-sync this song</button>
+      <button onclick="nudge(-0.5)">◀ −0.5s</button>
+      <button onclick="nudge(0.5)">+0.5s ▶</button>
+      <button onclick="resetSync()">Auto reset</button>
+    </div>
+    <div class="p-row">
+      <div class="now" id="now">English version</div>
+      <div class="ctrl"><button id="playBtn" onclick="toggle()">▶</button></div>
+    </div>
+    <div class="bar-wrap"><span id="cur">0:00</span>
+      <div class="bar" id="bar" onclick="seek(event)"><div class="fill" id="fill"></div></div>
+      <span id="dur">0:00</span></div>
+  </div>
+  <audio id="audio" preload="metadata"></audio>
+
+<script>
+const TRACK = { en:'veronika-3.mp3', cs:'veronika-1.mp3' };
+const S = t => ({section:true, t});
+const LYRICS = {
+ en:[
+  S('Verse 1'),
+  "Two worlds apart, two different skies",
+  "A Czech girl's heart, met a Nigerian's eyes",
+  "She was twenty-one, full of grace and of light",
+  "She saw something in me I couldn't see in the night",
+  S('Pre-Chorus'),
+  "Through the storms and the seasons",
+  "She never let go",
+  "Love like hers has a reason —",
+  "Watch it grow, watch it grow…",
+  S('Chorus'),
+  "Veronika, Veronika",
+  "Forty years of glory on you",
+  "Veronika, Veronika",
+  "Only God could've made someone like you",
+  "Warm as the morning, strong as the tide",
+  "You held this whole family together inside",
+  "Heaven sent, heaven-blessed —",
+  "Veronika, you are our very best",
+  S('Verse 2'),
+  "When the road got heavy, when the weight was too great",
+  "She carried my burdens and she chose not to break",
+  "She believed in me, Lord, when I couldn't believe",
+  "Planted faith like a seed, watched it grow like a tree",
+  S('Bridge'),
+  "She opened her arms and she opened her heart",
+  "To Aidan and Ava — loved them right from the start",
+  "No difference in her eyes, no child left behind",
+  "That kind of love? That's so rare to find",
+  "Then Aimee and Ade — born in December's cold light ✨",
+  "Four children, one mother — she got it right",
+  "From London to Lagos, from Lagos to here",
+  "God wrote this story through every triumph, every tear",
+  "Different backgrounds — but one Father above",
+  "We are united in faith, united in love",
+  S('Final Chorus'),
+  "Veronika, Veronika",
+  "Forty years of glory on you",
+  "Veronika, Veronika",
+  "Only God could've made someone like you",
+  "Warm as the morning, strong as the tide",
+  "You held this whole family together inside",
+  "Heaven sent — heaven-blessed —",
+  "Veronika… you are our very best!",
+  S('Outro'),
+  "Happy birthday, our queen",
+  "The most beautiful thing we've ever seen",
+  "Forty looks like grace",
+  "On your wonderful face…",
+  "Veronika… Veronika…"
+ ],
+ cs:[
+  S('Sloka I'),
+  "Dva světy vzdálené, dvě různá nebe",
+  "České srdce potkalo nigerijské oči",
+  "Byl jí jednadvacet, plná krásy a světla",
+  "Viděla ve mně naději, když jsem ji neviděl sám",
+  S('Pre-refrén'),
+  "Skrze bouře i časy",
+  "Nikdy nepustila",
+  "Taková láska má smysl —",
+  "Sleduj jak roste, jak roste…",
+  S('Refrén'),
+  "Veronika, Veronika",
+  "Čtyřicet let slávy na tobě",
+  "Veronika, Veronika",
+  "Jen Bůh mohl stvořit někoho jako ty",
+  "Teplá jak svítání, silná jak příliv",
+  "Celou rodinu jsi držela pohromadě",
+  "Z nebe poslaná, z nebe požehnaná —",
+  "Veronika, jsi to nejlepší co máme",
+  S('Sloka II'),
+  "Když cesta ztvrdla a tíha byla příliš",
+  "Nesla má břemena a rozhodla se nezlomit",
+  "Věřila ve mě, Pane, když jsem sám nevěřil",
+  "Zasadila víru jako semínko — vyrostl strom",
+  S('Most'),
+  "Otevřela náruč a otevřela srdce",
+  "Pro Aidana a Avu — milovala je od začátku",
+  "Bez rozdílu v jejích očích, žádné dítě pozadu",
+  "Taková láska? Tu je tak těžké najít",
+  "Pak Aimee a Ade — narozeni v prosincovém světle ✦",
+  "Čtyři děti, jedna matka — dělá to správně",
+  "Z Prahy do Lagosu, z Lagosu až sem",
+  "Bůh psal náš příběh skrze vítězství i slzy",
+  "Různé světy — ale jeden Otec nahoře",
+  "Jsme spojeni vírou, spojeni láskou",
+  S('Finální refrén'),
+  "Veronika, Veronika",
+  "Čtyřicet let slávy na tobě",
+  "Veronika, Veronika",
+  "Jen Bůh mohl stvořit někoho jako ty",
+  "Teplá jak svítání, silná jak příliv",
+  "Celou rodinu jsi držela pohromadě",
+  "Z nebe poslaná — z nebe požehnaná —",
+  "Veronika… jsi to nejlepší co máme!",
+  S('Outro'),
+  "Šťastné narozeniny, naše královno",
+  "Nejkrásnější věc, jakou jsme kdy viděli",
+  "Čtyřicet vypadá jako milost",
+  "Na tvém nádherném obličeji…",
+  "Veronika… Veronika…"
+ ]
+};
+
+const audio=document.getElementById('audio');
+const lyricsEl=document.getElementById('lyrics');
+let lang='en', lines=[], times=[], offset=0, curLine=-1;
+let tapMode=false, tapIdx=0, tapTimes=[];
+const fmt=s=>{ if(!s||isNaN(s))return '0:00'; const m=Math.floor(s/60),x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; };
+const lineKey=()=>'lrc_v_'+lang;
+
+function render(){
+  lines = LYRICS[lang];
+  lyricsEl.innerHTML = lines.map((l,i)=> l.section
+    ? `<div class="line section" data-i="${i}">${l.t}</div>`
+    : `<div class="line" data-i="${i}">${l}</div>`).join('');
+}
+function lyricIndices(){ return lines.map((l,i)=>l.section?null:i).filter(i=>i!==null); }
+
+function buildAutoTimes(){
+  // distribute the singable lines across the song, leaving an intro lead-in and a tail
+  const idxs = lyricIndices();
+  const dur = audio.duration || 200;
+  const intro = Math.min(10, dur*0.06), tail = dur*0.04;
+  const span = Math.max(1, dur - intro - tail);
+  times = new Array(lines.length).fill(0);
+  idxs.forEach((li,k)=>{ times[li] = intro + (k/(idxs.length)) * span; });
+  // section headers take the time of the next singable line
+  for(let i=lines.length-1;i>=0;i--){ if(lines[i].section){ times[i] = (i+1<lines.length? times[i+1] : 0); } }
+}
+function loadSavedTimes(){
+  try{ const s=localStorage.getItem(lineKey()); if(s){ const arr=JSON.parse(s); if(arr&&arr.length===lines.length){ times=arr; return true; } } }catch(e){}
+  return false;
+}
+function setupTimes(){ if(!loadSavedTimes()) buildAutoTimes(); }
+
+function setLang(l){
+  lang=l; document.getElementById('btn-en').classList.toggle('on',l==='en');
+  document.getElementById('btn-cs').classList.toggle('on',l==='cs');
+  document.getElementById('now').textContent = l==='en'?'English version':'Česká verze';
+  const wasPlaying=!audio.paused; render(); audio.src=TRACK[l];
+  audio.addEventListener('loadedmetadata',()=>{ setupTimes(); }, {once:true});
+  curLine=-1; offset=0;
+  if(wasPlaying) audio.play().catch(()=>{});
+}
+function highlight(t){
+  let active=-1;
+  for(let i=0;i<lines.length;i++){ if(times[i] && (t+offset)>=times[i]) active=i; }
+  if(active===curLine) return; curLine=active;
+  const els=lyricsEl.querySelectorAll('.line');
+  els.forEach((el,i)=>{ el.classList.toggle('active', i===active); el.classList.toggle('past', i<active); });
+  const el=lyricsEl.querySelector(`.line[data-i="${active}"]`);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function toggle(){ if(audio.paused){audio.play();document.getElementById('playBtn').textContent='⏸';}
+  else{audio.pause();document.getElementById('playBtn').textContent='▶';} }
+function seek(e){ if(!audio.duration)return; const r=document.getElementById('bar').getBoundingClientRect();
+  audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration; }
+function nudge(d){ offset+=d; }
+function resetSync(){ try{localStorage.removeItem(lineKey());}catch(e){} buildAutoTimes(); offset=0; }
+
+/* tap-to-sync: tap/space at each singable line as it's sung */
+function toggleTapMode(){
+  if(!tapMode){ tapMode=true; tapIdx=0; tapTimes=new Array(lines.length).fill(0);
+    document.getElementById('syncBtn').classList.add('live');
+    document.getElementById('tapHint').classList.add('on'); updateTapNext();
+    audio.currentTime=0; audio.play(); document.getElementById('playBtn').textContent='⏸';
+  } else { finishTap(); }
+}
+function updateTapNext(){
+  const idxs=lyricIndices(); const li=idxs[tapIdx];
+  document.getElementById('tapNext').textContent = li!=null ? '“'+lines[li]+'”' : 'All done — saving…';
+}
+function tapMark(){
+  if(!tapMode) return; const idxs=lyricIndices();
+  if(tapIdx>=idxs.length){ finishTap(); return; }
+  tapTimes[idxs[tapIdx]] = audio.currentTime; tapIdx++;
+  if(tapIdx>=idxs.length){ finishTap(); } else updateTapNext();
+}
+function finishTap(){
+  tapMode=false; document.getElementById('syncBtn').classList.remove('live');
+  document.getElementById('tapHint').classList.remove('on');
+  // fill section headers with next line time
+  for(let i=lines.length-1;i>=0;i--){ if(lines[i].section) tapTimes[i]=(i+1<lines.length?tapTimes[i+1]:0); }
+  times=tapTimes.slice();
+  try{ localStorage.setItem(lineKey(), JSON.stringify(times)); }catch(e){}
+}
+document.addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); if(tapMode) tapMark(); else toggle(); } });
+
+audio.addEventListener('timeupdate',()=>{ if(!audio.duration)return;
+  document.getElementById('fill').style.width=(audio.currentTime/audio.duration*100)+'%';
+  document.getElementById('cur').textContent=fmt(audio.currentTime);
+  document.getElementById('dur').textContent=fmt(audio.duration);
+  if(!tapMode) highlight(audio.currentTime); });
+audio.addEventListener('ended',()=>{ document.getElementById('playBtn').textContent='▶'; });
+
+// boot
+setLang('en');
+</script>
+</body>
+</html>
