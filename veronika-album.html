@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veronika · Forty & Glorious — The Album</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Playfair+Display:ital,wght@0,500;1,600&display=swap" rel="stylesheet">
+<style>
+:root{ --gold:#C9A84C; --gold2:#E8C97A; --bg:#0d0804; --cream:#F0E6C8; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:radial-gradient(120% 90% at 50% 0%, #1A0A00 0%, #0d0804 60%);
+  color:var(--cream);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;padding:40px 18px 120px;}
+.crest{font-size:13px;letter-spacing:6px;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:18px;}
+h1{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(46px,11vw,84px);color:var(--gold);
+  text-shadow:0 0 50px rgba(201,168,76,.35);line-height:1;}
+.sub{font-size:clamp(15px,3vw,20px);letter-spacing:8px;text-transform:uppercase;color:rgba(240,230,200,.65);margin-top:10px;}
+.rule{width:160px;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin:26px 0 8px;}
+.dedication{max-width:520px;text-align:center;font-style:italic;font-size:18px;color:rgba(240,230,200,.8);margin:14px 0 34px;line-height:1.6;}
+
+.tracklist{width:100%;max-width:540px;}
+.track{display:flex;align-items:center;gap:16px;padding:16px 18px;border:1px solid rgba(201,168,76,.18);
+  border-radius:14px;margin-bottom:12px;cursor:pointer;transition:all .2s;background:rgba(201,168,76,.03);}
+.track:hover{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.08);}
+.track.playing{border-color:var(--gold);background:rgba(201,168,76,.12);}
+.track .num{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);width:30px;text-align:center;flex-shrink:0;}
+.track .meta{flex:1;}
+.track .t-title{font-size:20px;color:var(--cream);}
+.track .t-sub{font-size:13.5px;letter-spacing:1px;color:rgba(240,230,200,.5);text-transform:uppercase;margin-top:2px;}
+.track .t-time{font-size:14px;color:rgba(240,230,200,.45);flex-shrink:0;}
+.track .eq{display:none;gap:2px;align-items:flex-end;height:16px;flex-shrink:0;}
+.track.playing .eq{display:flex;}
+.eq i{width:3px;background:var(--gold);animation:eq .8s ease-in-out infinite;}
+.eq i:nth-child(2){animation-delay:.2s;} .eq i:nth-child(3){animation-delay:.4s;}
+@keyframes eq{0%,100%{height:5px;}50%{height:16px;}}
+
+/* sticky player */
+.player{position:fixed;bottom:0;left:0;right:0;background:rgba(13,8,4,.96);backdrop-filter:blur(14px);
+  border-top:1px solid rgba(201,168,76,.3);padding:14px 18px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.p-row{display:flex;align-items:center;gap:18px;width:100%;max-width:540px;}
+.now{flex:1;font-size:15px;letter-spacing:1px;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ctrl{display:flex;align-items:center;gap:14px;}
+.ctrl button{background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);width:40px;height:40px;border-radius:50%;
+  cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.2s;}
+.ctrl button:hover{background:rgba(201,168,76,.2);}
+.ctrl .big{width:52px;height:52px;font-size:20px;background:rgba(201,168,76,.14);}
+.bar-wrap{width:100%;max-width:540px;display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(240,230,200,.5);}
+.bar{flex:1;height:4px;background:rgba(201,168,76,.15);border-radius:3px;cursor:pointer;position:relative;}
+.fill{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:3px;width:0%;}
+.hint{font-size:12px;color:rgba(240,230,200,.4);letter-spacing:2px;text-transform:uppercase;margin-top:28px;}
+</style>
+</head>
+<body>
+  <div class="crest">A gift, with all my love</div>
+  <h1>Veronika</h1>
+  <div class="sub">Forty &amp; Glorious</div>
+  <div class="rule"></div>
+  <p class="dedication">Four songs for forty years — across two worlds, four children, one faith, and a love that crossed the whole world to find you.</p>
+
+  <div class="tracklist" id="tracklist"></div>
+  <div class="hint">Tap a song to play · plays as an album</div>
+
+  <div class="player">
+    <div class="p-row">
+      <div class="now" id="now">— select a song —</div>
+      <div class="ctrl">
+        <button onclick="prev()" title="Previous">◀◀</button>
+        <button class="big" id="playBtn" onclick="toggle()">▶</button>
+        <button onclick="next()" title="Next">▶▶</button>
+      </div>
+    </div>
+    <div class="bar-wrap"><span id="cur">0:00</span>
+      <div class="bar" id="bar" onclick="seek(event)"><div class="fill" id="fill"></div></div>
+      <span id="dur">0:00</span></div>
+  </div>
+  <audio id="audio" preload="metadata"></audio>
+
+<script>
+/* ====== EDIT HERE: rename the 4 songs / set which are Czech vs English ====== */
+const TRACKS = [
+  { file:'veronika-1.mp3', title:'Version One',   sub:'Forty & Glorious' },
+  { file:'veronika-2.mp3', title:'Version Two',   sub:'Forty & Glorious' },
+  { file:'veronika-3.mp3', title:'Version Three', sub:'Forty & Glorious' },
+  { file:'veronika-4.mp3', title:'Version Four',  sub:'Forty & Glorious' },
+];
+/* =========================================================================== */
+
+const audio=document.getElementById('audio');
+const list=document.getElementById('tracklist');
+let cur=-1;
+const fmt=s=>{ if(!s||isNaN(s))return '0:00'; const m=Math.floor(s/60),x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; };
+
+TRACKS.forEach((t,i)=>{
+  const el=document.createElement('div'); el.className='track'; el.id='trk'+i;
+  el.onclick=()=>playTrack(i);
+  el.innerHTML=`<div class="num">${i+1}</div>
+    <div class="meta"><div class="t-title">${t.title}</div><div class="t-sub">${t.sub}</div></div>
+    <div class="eq"><i></i><i></i><i></i></div>
+    <div class="t-time" id="tt${i}">–:–</div>`;
+  list.appendChild(el);
+  // preload duration
+  const a=new Audio(); a.preload='metadata'; a.src=t.file;
+  a.onloadedmetadata=()=>{ document.getElementById('tt'+i).textContent=fmt(a.duration); };
+});
+
+function playTrack(i){
+  cur=i; audio.src=TRACKS[i].file; audio.play().catch(()=>{});
+  document.querySelectorAll('.track').forEach(t=>t.classList.remove('playing'));
+  document.getElementById('trk'+i).classList.add('playing');
+  document.getElementById('now').textContent=TRACKS[i].title;
+  document.getElementById('playBtn').textContent='⏸';
+}
+function toggle(){ if(cur<0){playTrack(0);return;} if(audio.paused){audio.play();document.getElementById('playBtn').textContent='⏸';}
+  else{audio.pause();document.getElementById('playBtn').textContent='▶';} }
+function next(){ playTrack((cur+1)%TRACKS.length); }
+function prev(){ playTrack((cur-1+TRACKS.length)%TRACKS.length); }
+function seek(e){ if(!audio.duration)return; const r=document.getElementById('bar').getBoundingClientRect();
+  audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration; }
+audio.addEventListener('timeupdate',()=>{ if(!audio.duration)return;
+  document.getElementById('fill').style.width=(audio.currentTime/audio.duration*100)+'%';
+  document.getElementById('cur').textContent=fmt(audio.currentTime);
+  document.getElementById('dur').textContent=fmt(audio.duration); });
+audio.addEventListener('ended',()=>{ if(cur<TRACKS.length-1) next(); else { document.getElementById('playBtn').textContent='▶'; } });
+</script>
+</body>
+</html>
